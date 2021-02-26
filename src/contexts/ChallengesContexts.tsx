@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useContext, useState } from 'react';
+import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 import challenges from '../../challenges.json';
 
 interface challenge{
@@ -16,6 +16,7 @@ interface ChallengesContextData{
     levelUp: () => void;
     startNewChallenge:() => void;
     resetChallenge: () => void;
+    completeChallenge: () => void;
 
 }
 
@@ -34,6 +35,10 @@ export function ChallengesProvider({children}: ChallengesProviderFrops){
 
     const experienceToNextLevel = Math.pow((level+1) * 4, 2)
 
+    useEffect (() => {
+        Notification.requestPermission();
+    })
+
     function levelUp(){
         setLevel(level + 1);
     }
@@ -43,10 +48,37 @@ export function ChallengesProvider({children}: ChallengesProviderFrops){
         const challenge = challenges[randomChallengesIndex];
 
         setActiveChallenge(challenge)
+
+        new Audio('/notificaton.mp3').play();
+
+        if (Notification.permission == 'granted') {
+            new Notification ('Novo desafio 🎉', {
+                body: `Valendo ${challenge.amount}xp!`
+            })
+        }
     }
 
     function resetChallenge(){
         setActiveChallenge(null);
+    }
+
+    function completeChallenge(){
+        if(!activeChallenge){
+            return;
+        }
+
+        const {amount} = activeChallenge;
+        
+        let finalExperience = currentExperience + amount;
+
+        if(finalExperience >= experienceToNextLevel){
+            finalExperience = finalExperience - experienceToNextLevel;
+            levelUp();
+        }
+
+        setCurrentExperience(finalExperience);
+        setActiveChallenge(null);
+        setChallengesCompleted(challengesCompleted + 1);
     }
     
     return(
@@ -60,6 +92,7 @@ export function ChallengesProvider({children}: ChallengesProviderFrops){
             resetChallenge,
             activeChallenge,
             experienceToNextLevel,
+            completeChallenge,
             
             }}>
             {children}
